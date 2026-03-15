@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//usr/local/bin/**)",
+      "Read(//opt/homebrew/**)",
+      "Bash(echo $PATH)",
+      "Bash(command -v node)",
+      "Bash(brew install:*)",
+      "Bash(conda install:*)",
+      "Bash(/opt/anaconda3/bin/conda install:*)"
+    ]
+  }
+}
