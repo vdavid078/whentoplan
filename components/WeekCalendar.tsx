@@ -297,8 +297,8 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
         <div className="flex items-center gap-1"><div className="w-4 h-4 rounded bg-blue-100 ring-2 ring-blue-500 ring-inset border border-slate-200" /><span>Your slot</span></div>
       </div>
 
-      {/* ── Main layout: calendar + comments side by side ── */}
-      <div className="flex gap-4 items-start">
+      {/* ── Main layout: calendar + comments side by side on desktop, stacked on mobile ── */}
+      <div className="flex flex-col lg:flex-row gap-4 items-start">
         {/* Calendar */}
         <div className="flex-1 min-w-0 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden no-select" style={{ userSelect: "none" }}>
           <div className="grid" style={{ gridTemplateColumns: "52px repeat(7, 1fr)" }}>
@@ -352,7 +352,7 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
         </div>
 
         {/* ── Comments panel ── */}
-        <div className="w-64 shrink-0 flex flex-col gap-3">
+        <div className="w-full lg:w-64 lg:shrink-0 flex flex-col gap-3">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
             <h2 className="text-sm font-semibold text-slate-700 mb-3">Notes for this week</h2>
 
