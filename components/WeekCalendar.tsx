@@ -293,7 +293,8 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
       {/* ── Main layout: calendar + comments side by side on desktop, stacked on mobile ── */}
       <div className="flex flex-col lg:flex-row gap-4 items-start">
         {/* Calendar */}
-        <div className="flex-1 min-w-0 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden no-select" style={{ userSelect: "none" }}>
+        <div className="flex-1 min-w-0 overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
+        <div className="bg-white no-select min-w-[560px]" style={{ userSelect: "none" }}>
           <div className="grid" style={{ gridTemplateColumns: "52px repeat(7, 1fr)" }}>
             <div className="border-b border-r border-slate-200 bg-slate-50" />
             {weekDays.map((day, i) => {
@@ -342,6 +343,7 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
               })}
             </div>
           ))}
+        </div>
         </div>
 
         {/* ── Comments panel ── */}
@@ -412,7 +414,7 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
         </div>
       </div>
 
-      <p className="text-xs text-slate-400 mt-3 text-center">
+      <p className="text-xs text-slate-600 mt-3 text-center bg-white/80 rounded-full py-1.5 px-4 w-fit mx-auto shadow-sm">
         Click or drag to toggle your availability · Hover a slot to see who&apos;s available
       </p>
     </div>
