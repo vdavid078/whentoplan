@@ -85,21 +85,21 @@ export default function Home() {
       {/* Light overlay so calendar stays readable */}
       <div className="fixed inset-0 bg-white/70 -z-10" />
 
-      <header className="bg-white/80 backdrop-blur border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10 shadow-sm">
+      <header className="bg-white/85 backdrop-blur border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10 shadow-sm">
         <div className="flex items-center gap-2">
           <span className="text-xl">🅿️</span>
-          <h1 className="text-lg font-bold text-slate-800">PapicinosPlanning</h1>
+          <h1 className="text-base font-bold text-slate-800">PapicinosPlanning</h1>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-slate-500">
-            Logged in as{" "}
-            <span className="font-semibold text-slate-700">{userName}</span>
-          </span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 bg-slate-100 rounded-full px-3 py-1">
+            <div className="w-2 h-2 rounded-full bg-green-400" />
+            <span className="text-xs font-semibold text-slate-700">{userName}</span>
+          </div>
           <button
             onClick={handleChangeName}
-            className="text-xs text-blue-600 hover:text-blue-800 underline"
+            className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
           >
-            Change
+            ✕
           </button>
         </div>
       </header>

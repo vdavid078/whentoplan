@@ -7,8 +7,8 @@ const HOURS = Array.from({ length: 15 }, (_, i) => i + 8); // 8–22
 
 function getWeekStart(date: Date): Date {
   const d = new Date(date);
-  const day = d.getDay(); // 0=Sun
-  const diff = day === 0 ? -6 : 1 - day; // Monday as start
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
   d.setDate(d.getDate() + diff);
   d.setHours(0, 0, 0, 0);
   return d;
@@ -21,7 +21,7 @@ function addDays(date: Date, n: number): Date {
 }
 
 function formatDate(date: Date): string {
-  return date.toISOString().slice(0, 10); // YYYY-MM-DD
+  return date.toISOString().slice(0, 10);
 }
 
 function slotKey(date: Date, hour: number): string {
@@ -35,18 +35,13 @@ function parseSlotKey(key: string): { date: string; hour: number } {
 
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-function heatmapColor(count: number, maxCount: number, isCurrentUser: boolean) {
+function heatmapColor(count: number, isCurrentUser: boolean) {
   const base =
-    count === 0
-      ? "bg-slate-100"
-      : count === 1
-      ? "bg-green-100"
-      : count === 2
-      ? "bg-green-300"
-      : count < 5
-      ? "bg-green-500"
-      : "bg-green-700";
-
+    count === 0 ? "bg-slate-100"
+    : count === 1 ? "bg-green-100"
+    : count === 2 ? "bg-green-300"
+    : count < 5  ? "bg-green-500"
+    : "bg-green-700";
   const outline = isCurrentUser ? "ring-2 ring-blue-500 ring-inset" : "";
   return `${base} ${outline}`;
 }
@@ -56,71 +51,52 @@ function generateICS(slot: string): string {
   const [year, month, day] = date.split("-").map(Number);
   const pad = (n: number) => String(n).padStart(2, "0");
   const dtStart = `${year}${pad(month)}${pad(day)}T${pad(hour)}0000`;
-  const dtEnd = `${year}${pad(month)}${pad(day)}T${pad(hour + 1)}0000`;
+  const dtEnd   = `${year}${pad(month)}${pad(day)}T${pad(hour + 1)}0000`;
   return [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//PapicinosPlanning//EN",
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//PapicinosPlanning//EN",
     "BEGIN:VEVENT",
     `UID:papicinos-${slot}@papicinosplanning`,
-    `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").slice(0, 15)}Z`,
-    `DTSTART:${dtStart}`,
-    `DTEND:${dtEnd}`,
+    `DTSTAMP:${new Date().toISOString().replace(/[-:]/g,"").slice(0,15)}Z`,
+    `DTSTART:${dtStart}`, `DTEND:${dtEnd}`,
     "SUMMARY:Group Meeting (PapicinosPlanning)",
-    "DESCRIPTION:Best available slot from PapicinosPlanning",
-    "END:VEVENT",
-    "END:VCALENDAR",
+    "END:VEVENT", "END:VCALENDAR",
   ].join("\r\n");
 }
 
 function downloadICS(slot: string) {
-  const content = generateICS(slot);
-  const blob = new Blob([content], { type: "text/calendar;charset=utf-8" });
+  const blob = new Blob([generateICS(slot)], { type: "text/calendar;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url;
-  a.download = `papicinos-${slot}.ics`;
-  a.click();
+  a.href = url; a.download = `papicinos-${slot}.ics`; a.click();
   URL.revokeObjectURL(url);
 }
 
-type WeekComment = {
-  user_name: string;
-  week_start: string;
-  comment: string;
-};
+type WeekComment = { user_name: string; week_start: string; comment: string };
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function WeekCalendar({ currentUser }: { currentUser: string }) {
   const [weekStart, setWeekStart] = useState<Date>(() => getWeekStart(new Date()));
+  const [allSlots, setAllSlots]   = useState<Map<string, Set<string>>>(new Map());
+  const [mySlots, setMySlots]     = useState<Set<string>>(new Set());
+  const [viewUser, setViewUser]   = useState<string | null>(null);
+  const [allUsers, setAllUsers]   = useState<string[]>([]);
 
-  const [allSlots, setAllSlots] = useState<Map<string, Set<string>>>(new Map());
-  const [mySlots, setMySlots] = useState<Set<string>>(new Set());
-  const [viewUser, setViewUser] = useState<string | null>(null);
-  const [allUsers, setAllUsers] = useState<string[]>([]);
-
-  // Comments
-  const [comments, setComments] = useState<WeekComment[]>([]);
-  const [myComment, setMyComment] = useState("");
+  const [comments, setComments]           = useState<WeekComment[]>([]);
+  const [myComment, setMyComment]         = useState("");
   const [editingComment, setEditingComment] = useState(false);
-  const [draftComment, setDraftComment] = useState("");
+  const [draftComment, setDraftComment]   = useState("");
 
-  // Drag state
-  const dragging = useRef(false);
-  const dragMode = useRef<"add" | "remove">("add");
-  const dragStartSlot = useRef<string | null>(null);
+  const dragging      = useRef(false);
+  const dragMode      = useRef<"add" | "remove">("add");
   const pendingToggle = useRef<Set<string>>(new Set());
-
   const weekKey = formatDate(weekStart);
 
-  // Load availabilities
-  const loadAll = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("availabilities")
-      .select("user_name, slot_key");
-    if (error) { console.error("Load error:", error); return; }
+  // ── Data loading ────────────────────────────────────────────────────────
 
+  const loadAll = useCallback(async () => {
+    const { data, error } = await supabase.from("availabilities").select("user_name, slot_key");
+    if (error) { console.error(error); return; }
     const map = new Map<string, Set<string>>();
     const users = new Set<string>();
     for (const row of data as Pick<Availability, "user_name" | "slot_key">[]) {
@@ -128,90 +104,75 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
       if (!map.has(row.slot_key)) map.set(row.slot_key, new Set());
       map.get(row.slot_key)!.add(row.user_name);
     }
-
     setAllSlots(map);
     setAllUsers(Array.from(users).sort());
-
     const mine = new Set<string>();
-    map.forEach((usersInSlot, key) => {
-      if (usersInSlot.has(currentUser)) mine.add(key);
-    });
+    map.forEach((u, k) => { if (u.has(currentUser)) mine.add(k); });
     setMySlots(mine);
   }, [currentUser]);
 
-  // Load comments for current week — also resets state so switching weeks is clean
   const loadComments = useCallback(async () => {
-    setComments([]);
-    setMyComment("");
-    setDraftComment("");
-    setEditingComment(false);
+    setComments([]); setMyComment(""); setDraftComment(""); setEditingComment(false);
     const { data, error } = await supabase
-      .from("week_comments")
-      .select("user_name, week_start, comment")
-      .eq("week_start", weekKey);
-    if (error) { console.error("Comments load error:", error); return; }
+      .from("week_comments").select("user_name, week_start, comment").eq("week_start", weekKey);
+    if (error) { console.error(error); return; }
     const rows = (data ?? []) as WeekComment[];
     setComments(rows);
     const mine = rows.find((r) => r.user_name === currentUser);
-    if (mine) {
-      setMyComment(mine.comment);
-      setDraftComment(mine.comment);
-    }
+    if (mine) { setMyComment(mine.comment); setDraftComment(mine.comment); }
   }, [currentUser, weekKey]);
 
-  useEffect(() => { loadAll(); }, [loadAll]);
+  useEffect(() => { loadAll(); },      [loadAll]);
   useEffect(() => { loadComments(); }, [loadComments]);
 
-  // Realtime
   useEffect(() => {
-    const channel = supabase
-      .channel("realtime-all")
-      .on("postgres_changes", { event: "*", schema: "public", table: "availabilities" }, () => loadAll())
+    const ch = supabase.channel("realtime-all")
+      .on("postgres_changes", { event: "*", schema: "public", table: "availabilities" },  () => loadAll())
       .on("postgres_changes", { event: "*", schema: "public", table: "week_comments" }, () => loadComments())
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => { supabase.removeChannel(ch); };
   }, [loadAll, loadComments]);
 
   // ── Slot toggle ──────────────────────────────────────────────────────────
 
   async function addSlot(key: string) {
-    setMySlots((prev) => new Set([...prev, key]));
-    setAllSlots((prev) => {
-      const next = new Map(prev);
-      if (!next.has(key)) next.set(key, new Set());
-      next.get(key)!.add(currentUser);
-      return next;
+    setMySlots(p => new Set([...p, key]));
+    setAllSlots(p => {
+      const n = new Map(p);
+      if (!n.has(key)) n.set(key, new Set());
+      n.get(key)!.add(currentUser); return n;
     });
     await supabase.from("availabilities").upsert({ user_name: currentUser, slot_key: key });
   }
 
   async function removeSlot(key: string) {
-    setMySlots((prev) => { const next = new Set(prev); next.delete(key); return next; });
-    setAllSlots((prev) => { const next = new Map(prev); next.get(key)?.delete(currentUser); return next; });
+    setMySlots(p => { const n = new Set(p); n.delete(key); return n; });
+    setAllSlots(p => { const n = new Map(p); n.get(key)?.delete(currentUser); return n; });
     await supabase.from("availabilities").delete().eq("user_name", currentUser).eq("slot_key", key);
   }
 
-  // ── Drag ─────────────────────────────────────────────────────────────────
+  // ── Mouse drag (desktop) ─────────────────────────────────────────────────
 
   function handleMouseDown(key: string) {
     dragging.current = true;
-    const isSelected = mySlots.has(key);
-    dragMode.current = isSelected ? "remove" : "add";
+    dragMode.current = mySlots.has(key) ? "remove" : "add";
     pendingToggle.current = new Set([key]);
-    dragStartSlot.current = key;
     if (dragMode.current === "add") addSlot(key); else removeSlot(key);
   }
 
   function handleMouseEnter(key: string) {
-    if (!dragging.current) return;
-    if (pendingToggle.current.has(key)) return;
+    if (!dragging.current || pendingToggle.current.has(key)) return;
     pendingToggle.current.add(key);
     if (dragMode.current === "add") addSlot(key); else removeSlot(key);
   }
 
-  function handleMouseUp() {
-    dragging.current = false;
-    pendingToggle.current.clear();
+  function handleMouseUp() { dragging.current = false; pendingToggle.current.clear(); }
+
+  // ── Touch tap (mobile) ───────────────────────────────────────────────────
+
+  function handleTouchEnd(e: React.TouchEvent, key: string) {
+    e.preventDefault();
+    if (mySlots.has(key)) removeSlot(key); else addSlot(key);
   }
 
   // ── Comments ─────────────────────────────────────────────────────────────
@@ -231,191 +192,246 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
 
   async function deleteComment() {
     await supabase.from("week_comments").delete().eq("user_name", currentUser).eq("week_start", weekKey);
-    setMyComment("");
-    setDraftComment("");
-    setEditingComment(false);
+    setMyComment(""); setDraftComment(""); setEditingComment(false);
     loadComments();
   }
 
-  // ── Best slot ─────────────────────────────────────────────────────────────
+  // ── Derived ───────────────────────────────────────────────────────────────
 
   const bestSlot = (() => {
-    let best: string | null = null;
-    let bestCount = 0;
-    allSlots.forEach((users, key) => {
-      if (users.size > bestCount) { bestCount = users.size; best = key; }
-    });
+    let best: string | null = null, bestCount = 0;
+    allSlots.forEach((u, k) => { if (u.size > bestCount) { bestCount = u.size; best = k; } });
     return best ? { key: best, count: bestCount } : null;
   })();
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-  const today = formatDate(new Date());
+  const today    = formatDate(new Date());
 
-  let maxCount = 1;
-  allSlots.forEach((users) => { if (users.size > maxCount) maxCount = users.size; });
-
-  const viewingUser = viewUser;
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-4 max-w-7xl mx-auto" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
-      {/* ── Controls ── */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 px-3 py-2 shadow-sm">
-          <button onClick={() => setWeekStart((w) => addDays(w, -7))} className="text-slate-500 hover:text-slate-800 font-bold text-lg px-1">‹</button>
-          <span className="text-sm font-medium text-slate-700 min-w-[150px] text-center">
-            {weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" })}{" "}–{" "}
-            {addDays(weekStart, 6).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-          </span>
-          <button onClick={() => setWeekStart((w) => addDays(w, 7))} className="text-slate-500 hover:text-slate-800 font-bold text-lg px-1">›</button>
-          <button onClick={() => setWeekStart(getWeekStart(new Date()))} className="text-xs text-blue-600 hover:underline ml-1">Today</button>
+    <div className="px-3 py-3 sm:px-4 sm:py-4 max-w-7xl mx-auto"
+      onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
+
+      {/* ── Week navigation ── */}
+      <div className="flex items-center justify-between bg-white/90 backdrop-blur rounded-2xl border border-slate-200 shadow-sm px-3 py-2 mb-3">
+        <button
+          onClick={() => setWeekStart(w => addDays(w, -7))}
+          className="w-9 h-9 flex items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 active:bg-slate-200 text-xl font-bold transition-colors"
+        >‹</button>
+
+        <div className="text-center">
+          <div className="text-sm font-semibold text-slate-800">
+            {weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+            {" – "}
+            {addDays(weekStart, 6).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+          </div>
+          <div className="text-xs text-slate-400">
+            {addDays(weekStart, 6).getFullYear()}
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 px-3 py-2 shadow-sm flex-wrap">
-          <span className="text-xs text-slate-500 font-medium">View:</span>
-          <button onClick={() => setViewUser(null)} className={`text-xs px-2 py-1 rounded-md font-medium transition-colors ${viewingUser === null ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-100"}`}>Everyone</button>
-          {allUsers.map((u) => (
-            <button key={u} onClick={() => setViewUser(viewingUser === u ? null : u)} className={`text-xs px-2 py-1 rounded-md font-medium transition-colors ${viewingUser === u ? "bg-purple-600 text-white" : "text-slate-600 hover:bg-slate-100"}`}>{u}</button>
-          ))}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setWeekStart(getWeekStart(new Date()))}
+            className="text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg transition-colors mr-1"
+          >Today</button>
+          <button
+            onClick={() => setWeekStart(w => addDays(w, 7))}
+            className="w-9 h-9 flex items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 active:bg-slate-200 text-xl font-bold transition-colors"
+          >›</button>
         </div>
       </div>
 
+      {/* ── View filter ── */}
+      <div className="flex gap-2 mb-3 overflow-x-auto pb-1 scrollbar-none">
+        <button
+          onClick={() => setViewUser(null)}
+          className={`shrink-0 text-xs px-3 py-1.5 rounded-full font-medium transition-colors border ${
+            viewUser === null
+              ? "bg-blue-600 text-white border-blue-600"
+              : "bg-white/90 text-slate-600 border-slate-200 hover:border-slate-300"
+          }`}
+        >Everyone</button>
+        {allUsers.map(u => (
+          <button key={u}
+            onClick={() => setViewUser(viewUser === u ? null : u)}
+            className={`shrink-0 text-xs px-3 py-1.5 rounded-full font-medium transition-colors border ${
+              viewUser === u
+                ? "bg-purple-600 text-white border-purple-600"
+                : "bg-white/90 text-slate-600 border-slate-200 hover:border-slate-300"
+            }`}
+          >{u}</button>
+        ))}
+      </div>
+
+      {/* ── Best slot banner ── */}
       {bestSlot && <BestSlotBanner slot={bestSlot.key} count={bestSlot.count} />}
 
       {/* ── Legend ── */}
-      <div className="flex items-center gap-3 mb-3 text-xs text-slate-500">
-        <span>Availability:</span>
-        {[["bg-slate-100","0"],["bg-green-100","1"],["bg-green-300","2"],["bg-green-500","3–4"],["bg-green-700","5+"]].map(([cls, label]) => (
-          <div key={label} className="flex items-center gap-1"><div className={`w-4 h-4 rounded ${cls} border border-slate-200`} /><span>{label}</span></div>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-3 text-xs text-slate-500 bg-white/80 rounded-xl px-3 py-2">
+        <span className="font-medium text-slate-600">Availability:</span>
+        {([["bg-slate-100","0"],["bg-green-100","1"],["bg-green-300","2"],["bg-green-500","3–4"],["bg-green-700","5+"]] as [string,string][]).map(([cls, label]) => (
+          <div key={label} className="flex items-center gap-1">
+            <div className={`w-3 h-3 rounded-sm ${cls} border border-slate-200`} />
+            <span>{label}</span>
+          </div>
         ))}
-        <div className="flex items-center gap-1"><div className="w-4 h-4 rounded bg-blue-100 ring-2 ring-blue-500 ring-inset border border-slate-200" /><span>Your slot</span></div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-sm bg-blue-100 ring-2 ring-blue-500 ring-inset" />
+          <span>Yours</span>
+        </div>
       </div>
 
-      {/* ── Main layout: calendar + comments side by side on desktop, stacked on mobile ── */}
-      <div className="flex flex-col lg:flex-row gap-4 items-start">
-        {/* Calendar */}
+      {/* ── Main layout ── */}
+      <div className="flex flex-col lg:flex-row gap-3 items-start">
+
+        {/* Calendar — scrollable on mobile */}
         <div className="flex-1 min-w-0 overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
-        <div className="bg-white no-select min-w-[560px]" style={{ userSelect: "none" }}>
-          <div className="grid" style={{ gridTemplateColumns: "52px repeat(7, 1fr)" }}>
-            <div className="border-b border-r border-slate-200 bg-slate-50" />
-            {weekDays.map((day, i) => {
-              const isToday = formatDate(day) === today;
-              return (
-                <div key={i} className={`border-b border-r last:border-r-0 border-slate-200 py-2 text-center ${isToday ? "bg-blue-50" : "bg-slate-50"}`}>
-                  <div className={`text-xs font-medium ${isToday ? "text-blue-600" : "text-slate-500"}`}>{WEEKDAY_LABELS[i]}</div>
-                  <div className={`text-sm font-bold ${isToday ? "text-blue-700" : "text-slate-700"}`}>{day.getDate()}</div>
-                </div>
-              );
-            })}
-          </div>
-          {HOURS.map((hour) => (
-            <div key={hour} className="grid" style={{ gridTemplateColumns: "52px repeat(7, 1fr)" }}>
-              <div className="border-b border-r border-slate-100 bg-slate-50 flex items-center justify-end pr-2">
-                <span className="text-xs text-slate-400 font-mono">{String(hour).padStart(2, "0")}:00</span>
-              </div>
-              {weekDays.map((day, di) => {
-                const key = slotKey(day, hour);
-                const usersInSlot = allSlots.get(key) ?? new Set<string>();
-                const count = usersInSlot.size;
-                const isMine = mySlots.has(key);
-                const isBest = bestSlot?.key === key;
+          <div className="bg-white min-w-[540px]" style={{ userSelect: "none" }}>
 
-                let cellClass = "";
-                if (viewingUser) {
-                  const userHasSlot = usersInSlot.has(viewingUser);
-                  cellClass = userHasSlot ? (viewingUser === currentUser ? "bg-blue-200 ring-2 ring-blue-500 ring-inset" : "bg-purple-200") : "bg-slate-50";
-                } else {
-                  cellClass = heatmapColor(count, maxCount, isMine);
-                }
-
+            {/* Header row */}
+            <div className="grid" style={{ gridTemplateColumns: "44px repeat(7, 1fr)" }}>
+              <div className="border-b border-r border-slate-200 bg-slate-50" />
+              {weekDays.map((day, i) => {
+                const isToday = formatDate(day) === today;
                 return (
-                  <div
-                    key={di}
-                    title={count > 0 ? `${count} available: ${Array.from(usersInSlot).join(", ")}` : "No one available"}
-                    className={`border-b border-r last:border-r-0 border-slate-100 h-8 cursor-pointer transition-all relative ${cellClass} ${formatDate(day) === today ? "border-l border-l-blue-200" : ""} ${isBest && !viewingUser ? "ring-1 ring-yellow-400" : ""}`}
-                    onMouseDown={() => handleMouseDown(key)}
-                    onMouseEnter={() => handleMouseEnter(key)}
-                  >
-                    {isBest && !viewingUser && count > 0 && (
-                      <span className="absolute top-0 right-0 text-[9px] leading-none bg-yellow-400 text-yellow-900 px-0.5 rounded-bl font-bold">★</span>
-                    )}
+                  <div key={i} className={`border-b border-r last:border-r-0 border-slate-200 py-2 text-center ${isToday ? "bg-blue-50" : "bg-slate-50"}`}>
+                    <div className={`text-[10px] font-semibold uppercase tracking-wide ${isToday ? "text-blue-500" : "text-slate-400"}`}>
+                      {WEEKDAY_LABELS[i]}
+                    </div>
+                    <div className={`text-sm font-bold mt-0.5 ${isToday ? "text-blue-600" : "text-slate-700"}`}>
+                      {day.getDate()}
+                    </div>
                   </div>
                 );
               })}
             </div>
-          ))}
-        </div>
+
+            {/* Time rows */}
+            {HOURS.map((hour) => (
+              <div key={hour} className="grid" style={{ gridTemplateColumns: "44px repeat(7, 1fr)" }}>
+                <div className="border-b border-r border-slate-100 bg-slate-50 flex items-center justify-end pr-1.5">
+                  <span className="text-[10px] text-slate-400 font-mono">{String(hour).padStart(2,"0")}:00</span>
+                </div>
+                {weekDays.map((day, di) => {
+                  const key = slotKey(day, hour);
+                  const usersInSlot = allSlots.get(key) ?? new Set<string>();
+                  const count  = usersInSlot.size;
+                  const isMine = mySlots.has(key);
+                  const isBest = bestSlot?.key === key;
+
+                  let cellClass = "";
+                  if (viewUser) {
+                    const has = usersInSlot.has(viewUser);
+                    cellClass = has
+                      ? viewUser === currentUser ? "bg-blue-200 ring-2 ring-blue-500 ring-inset" : "bg-purple-200"
+                      : "bg-slate-50";
+                  } else {
+                    cellClass = heatmapColor(count, isMine);
+                  }
+
+                  return (
+                    <div key={di}
+                      title={count > 0 ? `${count} available: ${Array.from(usersInSlot).join(", ")}` : "No one"}
+                      className={`border-b border-r last:border-r-0 border-slate-100 h-9 cursor-pointer transition-colors relative
+                        ${cellClass}
+                        ${formatDate(day) === today ? "border-l border-l-blue-200" : ""}
+                        ${isBest && !viewUser ? "ring-1 ring-yellow-400 ring-inset" : ""}
+                      `}
+                      onMouseDown={() => handleMouseDown(key)}
+                      onMouseEnter={() => handleMouseEnter(key)}
+                      onTouchEnd={(e) => handleTouchEnd(e, key)}
+                    >
+                      {isBest && !viewUser && count > 0 && (
+                        <span className="absolute top-0 right-0 text-[8px] leading-none bg-yellow-400 text-yellow-900 px-0.5 rounded-bl font-bold">★</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* ── Comments panel ── */}
-        <div className="w-full lg:w-64 lg:shrink-0 flex flex-col gap-3">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+        {/* ── Notes panel ── */}
+        <div className="w-full lg:w-64 lg:shrink-0">
+          <div className="bg-white/95 rounded-2xl border border-slate-200 shadow-sm p-4">
             <h2 className="text-sm font-semibold text-slate-700 mb-3">Notes for this week</h2>
 
-            {/* My comment */}
             {editingComment ? (
-              <div className="mb-3">
+              <div>
                 <textarea
                   value={draftComment}
-                  onChange={(e) => setDraftComment(e.target.value)}
+                  onChange={e => setDraftComment(e.target.value)}
                   placeholder="e.g. Free after work Mon–Thu, prefer Sunday on weekends"
                   rows={4}
                   maxLength={300}
                   autoFocus
-                  className="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2.5 text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none bg-slate-50"
                 />
                 <div className="flex gap-2 mt-2">
-                  <button onClick={saveComment} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg py-1.5 transition-colors">Save</button>
-                  <button onClick={() => { setEditingComment(false); setDraftComment(myComment); }} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg py-1.5 transition-colors">Cancel</button>
+                  <button onClick={saveComment}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold rounded-xl py-2 transition-colors">
+                    Save
+                  </button>
+                  <button onClick={() => { setEditingComment(false); setDraftComment(myComment); }}
+                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-semibold rounded-xl py-2 transition-colors">
+                    Cancel
+                  </button>
                 </div>
                 {myComment && (
-                  <button onClick={deleteComment} className="mt-1 w-full text-xs text-red-400 hover:text-red-600 transition-colors">Delete my note</button>
+                  <button onClick={deleteComment}
+                    className="mt-2 w-full text-xs text-red-400 hover:text-red-600 py-1 transition-colors">
+                    Delete note
+                  </button>
                 )}
               </div>
             ) : (
-              <div className="mb-3">
+              <div>
                 {myComment ? (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-2.5 mb-2">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-semibold text-blue-700">{currentUser}</span>
-                      <button onClick={() => { setEditingComment(true); setDraftComment(myComment); }} className="text-xs text-blue-400 hover:text-blue-600">Edit</button>
+                  <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 mb-2">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-xs font-bold text-blue-700">{currentUser}</span>
+                      <button
+                        onClick={() => { setEditingComment(true); setDraftComment(myComment); }}
+                        className="text-xs text-blue-400 hover:text-blue-600 font-medium">
+                        Edit
+                      </button>
                     </div>
-                    <p className="text-xs text-slate-600 whitespace-pre-wrap">{myComment}</p>
+                    <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{myComment}</p>
                   </div>
                 ) : (
                   <button
                     onClick={() => { setEditingComment(true); setDraftComment(""); }}
-                    className="w-full flex items-center justify-center gap-1.5 border-2 border-dashed border-slate-300 hover:border-blue-400 hover:text-blue-600 text-slate-400 text-xs font-medium rounded-lg py-2.5 transition-colors"
-                  >
-                    <span className="text-base leading-none">+</span> Add your note
+                    className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 hover:border-blue-400 hover:text-blue-600 text-slate-400 text-sm font-medium rounded-xl py-3 transition-colors active:bg-blue-50">
+                    <span className="text-lg leading-none">+</span> Add your note
                   </button>
                 )}
-              </div>
-            )}
 
-            {/* Other people's comments */}
-            {comments.filter((c) => c.user_name !== currentUser).length > 0 && (
-              <div className="flex flex-col gap-2">
-                <div className="text-xs text-slate-400 font-medium uppercase tracking-wide">Others</div>
-                {comments
-                  .filter((c) => c.user_name !== currentUser)
-                  .map((c) => (
-                    <div key={c.user_name} className="bg-slate-50 border border-slate-200 rounded-lg p-2.5">
-                      <div className="text-xs font-semibold text-slate-600 mb-1">{c.user_name}</div>
-                      <p className="text-xs text-slate-500 whitespace-pre-wrap">{c.comment}</p>
-                    </div>
-                  ))}
-              </div>
-            )}
+                {comments.filter(c => c.user_name !== currentUser).length > 0 && (
+                  <div className="mt-3 flex flex-col gap-2">
+                    <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Others</div>
+                    {comments.filter(c => c.user_name !== currentUser).map(c => (
+                      <div key={c.user_name} className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                        <div className="text-xs font-bold text-slate-600 mb-1">{c.user_name}</div>
+                        <p className="text-sm text-slate-500 leading-relaxed whitespace-pre-wrap">{c.comment}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
-            {comments.length === 0 && !editingComment && (
-              <p className="text-xs text-slate-400 text-center mt-1">No notes yet for this week</p>
+                {comments.length === 0 && (
+                  <p className="text-xs text-slate-400 text-center mt-2">No notes yet for this week</p>
+                )}
+              </div>
             )}
           </div>
         </div>
       </div>
 
-      <p className="text-xs text-slate-600 mt-3 text-center bg-white/80 rounded-full py-1.5 px-4 w-fit mx-auto shadow-sm">
-        Click or drag to toggle your availability · Hover a slot to see who&apos;s available
+      <p className="text-xs text-slate-500 mt-3 text-center bg-white/80 rounded-full py-1.5 px-4 w-fit mx-auto shadow-sm">
+        Tap or drag to toggle · Hover to see who&apos;s available
       </p>
     </div>
   );
@@ -429,18 +445,23 @@ function BestSlotBanner({ slot, count }: { slot: string; count: number }) {
   const dayLabel = dateObj.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 
   return (
-    <div className="mb-4 bg-yellow-50 border border-yellow-300 rounded-xl px-4 py-3 flex flex-wrap items-center justify-between gap-3 shadow-sm">
-      <div className="flex items-center gap-2">
-        <span className="text-yellow-500 text-lg">★</span>
-        <div>
-          <p className="text-sm font-semibold text-yellow-900">
-            Best slot — {dayLabel}, {String(hour).padStart(2, "0")}:00–{String(hour + 1).padStart(2, "0")}:00
+    <div className="mb-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-center justify-between gap-3 shadow-sm">
+      <div className="flex items-center gap-2.5 min-w-0">
+        <span className="text-amber-400 text-base shrink-0">★</span>
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-amber-900 truncate">
+            {dayLabel}, {String(hour).padStart(2,"0")}:00–{String(hour+1).padStart(2,"0")}:00
           </p>
-          <p className="text-xs text-yellow-700">{count} {count === 1 ? "person" : "people"} available</p>
+          <p className="text-xs text-amber-600 mt-0.5">
+            {count} {count === 1 ? "person" : "people"} available
+          </p>
         </div>
       </div>
-      <button onClick={() => downloadICS(slot)} className="flex items-center gap-1.5 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-semibold text-xs px-3 py-1.5 rounded-lg transition-colors">
-        <span>⬇</span> Export .ics
+      <button
+        onClick={() => downloadICS(slot)}
+        className="shrink-0 flex items-center gap-1.5 bg-amber-400 hover:bg-amber-500 active:bg-amber-600 text-amber-900 font-semibold text-xs px-3 py-2 rounded-xl transition-colors"
+      >
+        ⬇ .ics
       </button>
     </div>
   );
