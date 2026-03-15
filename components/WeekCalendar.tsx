@@ -88,6 +88,8 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
   const pendingToggle = useRef<Set<string>>(new Set());
   const weekKey = formatDate(weekStart);
 
+  const [infoSlot, setInfoSlot] = useState<string | null>(null);
+
   // ── Data ──────────────────────────────────────────────────────────────────
 
   const loadAll = useCallback(async () => {
@@ -154,6 +156,7 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
     dragMode.current === "add" ? addSlot(key) : removeSlot(key);
   }
   function handleMouseEnter(key: string) {
+    setInfoSlot(key);
     if (!dragging.current || pendingToggle.current.has(key)) return;
     pendingToggle.current.add(key);
     dragMode.current === "add" ? addSlot(key) : removeSlot(key);
@@ -162,6 +165,7 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
 
   function handleTouchEnd(e: React.TouchEvent, key: string) {
     e.preventDefault();
+    setInfoSlot(key);
     mySlots.has(key) ? removeSlot(key) : addSlot(key);
   }
 
@@ -454,10 +458,58 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
         </div>
       </div>
 
-      {/* ═══ HINT ════════════════════════════════════════════════════════════ */}
-      <p className="text-xs text-slate-500 mt-4 text-center bg-white/80 backdrop-blur rounded-full py-1.5 px-5 w-fit mx-auto shadow-sm border border-slate-100">
-        Tap or drag to toggle · Hover a slot to see who&apos;s available
-      </p>
+      {/* ═══ SLOT INFO BAR ═══════════════════════════════════════════════════ */}
+      <div className="mt-3 h-10 flex items-center justify-center">
+        {infoSlot ? (
+          <SlotInfoBar slotKey={infoSlot} allSlots={allSlots} currentUser={currentUser} />
+        ) : (
+          <p className="text-xs text-slate-500 bg-white/80 backdrop-blur rounded-full py-1.5 px-5 shadow-sm border border-slate-100">
+            Tap or drag to toggle · Tap a slot to see who&apos;s available
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Best Slot Banner ─────────────────────────────────────────────────────────
+
+// ─── Slot Info Bar ────────────────────────────────────────────────────────────
+
+function SlotInfoBar({
+  slotKey, allSlots, currentUser,
+}: {
+  slotKey: string;
+  allSlots: Map<string, Set<string>>;
+  currentUser: string;
+}) {
+  const { date, hour } = parseSlotKey(slotKey);
+  const dateObj = new Date(`${date}T00:00:00`);
+  const dayLabel = dateObj.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  const timeLabel = `${String(hour).padStart(2,"0")}:00`;
+  const usersInSlot = allSlots.get(slotKey) ?? new Set<string>();
+  const count = usersInSlot.size;
+  const names = Array.from(usersInSlot);
+
+  return (
+    <div className="flex items-center gap-2.5 bg-white/90 backdrop-blur rounded-full py-2 px-4 shadow-sm border border-slate-200 text-xs">
+      <span className="font-semibold text-slate-600">{dayLabel} · {timeLabel}</span>
+      <span className="w-px h-3.5 bg-slate-300" />
+      {count === 0 ? (
+        <span className="text-slate-400">No one available</span>
+      ) : (
+        <span className="text-slate-600">
+          <span className="font-semibold text-green-600">{count} available: </span>
+          {names.map((name, i) => (
+            <span key={name}>
+              <span className={name === currentUser ? "font-bold text-blue-600" : "text-slate-700"}>
+                {name}
+              </span>
+              {i < names.length - 1 && <span className="text-slate-400">, </span>}
+            </span>
+          ))}
+        </span>
+      )}
     </div>
   );
 }
