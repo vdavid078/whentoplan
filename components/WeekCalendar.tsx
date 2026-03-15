@@ -314,7 +314,7 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
             {/* Hour rows */}
             {HOURS.map((hour) => (
               <div key={hour} className="grid" style={{ gridTemplateColumns: "48px repeat(7, 1fr)" }}>
-                <div className="border-b border-r border-slate-100 bg-slate-50/60 flex items-center justify-end pr-2">
+                <div className="border-b border-r border-slate-300 bg-slate-50/60 flex items-center justify-end pr-2">
                   <span className="text-[10px] text-slate-400 font-mono tabular-nums">
                     {String(hour).padStart(2,"0")}:00
                   </span>
@@ -345,7 +345,7 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
                       title={count > 0
                         ? `${count} available: ${Array.from(usersInSlot).join(", ")}`
                         : "No one available"}
-                      className={`border-b border-r last:border-r-0 border-slate-100 h-9 cursor-pointer
+                      className={`border-b border-r last:border-r-0 border-slate-300 h-9 cursor-pointer
                         transition-colors relative select-none
                         ${cellClass}
                         ${formatDate(day) === today ? "border-l-2 border-l-blue-300" : ""}
