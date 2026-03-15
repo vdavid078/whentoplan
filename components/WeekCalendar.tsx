@@ -139,8 +139,12 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
     setMySlots(mine);
   }, [currentUser]);
 
-  // Load comments for current week
+  // Load comments for current week — also resets state so switching weeks is clean
   const loadComments = useCallback(async () => {
+    setComments([]);
+    setMyComment("");
+    setDraftComment("");
+    setEditingComment(false);
     const { data, error } = await supabase
       .from("week_comments")
       .select("user_name, week_start, comment")
@@ -152,19 +156,8 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
     if (mine) {
       setMyComment(mine.comment);
       setDraftComment(mine.comment);
-    } else {
-      setMyComment("");
-      setDraftComment("");
     }
   }, [currentUser, weekKey]);
-
-  // Clear comment state immediately when week changes
-  useEffect(() => {
-    setComments([]);
-    setMyComment("");
-    setDraftComment("");
-    setEditingComment(false);
-  }, [weekKey]);
 
   useEffect(() => { loadAll(); }, [loadAll]);
   useEffect(() => { loadComments(); }, [loadComments]);
