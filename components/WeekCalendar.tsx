@@ -158,6 +158,14 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
     }
   }, [currentUser, weekKey]);
 
+  // Clear comment state immediately when week changes
+  useEffect(() => {
+    setComments([]);
+    setMyComment("");
+    setDraftComment("");
+    setEditingComment(false);
+  }, [weekKey]);
+
   useEffect(() => { loadAll(); }, [loadAll]);
   useEffect(() => { loadComments(); }, [loadComments]);
 

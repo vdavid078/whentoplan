@@ -32,7 +32,9 @@ export default function Home() {
 
   if (!userName) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
+      <main className="min-h-screen flex items-center justify-center relative">
+        <div className="fixed inset-0 bg-cover bg-center -z-10" style={{ backgroundImage: "url('/papicinos.jpg')" }} />
+        <div className="fixed inset-0 bg-white/60 -z-10" />
         <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm mx-4">
           <div className="text-center mb-6">
             <div className="text-4xl mb-2">🅿️</div>
@@ -74,8 +76,16 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <header className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10 shadow-sm">
+    <main className="min-h-screen relative">
+      {/* Background photo */}
+      <div
+        className="fixed inset-0 bg-cover bg-center -z-10"
+        style={{ backgroundImage: "url('/papicinos.jpg')" }}
+      />
+      {/* Light overlay so calendar stays readable */}
+      <div className="fixed inset-0 bg-white/70 -z-10" />
+
+      <header className="bg-white/80 backdrop-blur border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10 shadow-sm">
         <div className="flex items-center gap-2">
           <span className="text-xl">🅿️</span>
           <h1 className="text-lg font-bold text-slate-800">PapicinosPlanning</h1>
