@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "WhenToPlan",
+  title: "PapicinosPlanning",
   description: "Group availability planner — find the best time for everyone",
 };
 
