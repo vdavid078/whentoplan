@@ -53,7 +53,7 @@ export default function Home() {
             <div className="text-center mb-6">
               <div className="text-4xl mb-2">🅿️</div>
               <h1 className="text-2xl font-bold text-slate-800">PapicinosPlanning</h1>
-              <p className="text-slate-500 text-sm mt-1">Findet den besten Termin für eure Gruppe</p>
+              <p className="text-slate-500 text-sm mt-1">Wann können die Jungs?</p>
             </div>
             <form onSubmit={handlePickSubmit} className="space-y-4">
               <div>
@@ -96,20 +96,14 @@ export default function Home() {
             </div>
 
             <div className="px-6 py-4 max-h-64 overflow-y-auto text-xs text-slate-500 space-y-3 leading-relaxed border-b border-slate-100 bg-slate-50/50">
-              <p><span className="font-bold text-slate-700">§ 1 – Geltungsbereich</span><br />
-              Diese Nutzungsbedingungen gelten für alle natürlichen Personen, die sich als {selected} identifizieren und den Dienst PapicinosPlanning (nachfolgend „die App", „dieses Wunderwerk" oder „das Ding") nutzen möchten. Mit dem Klick auf „Ich stimme zu" erkennt der Nutzer an, dass er diese Bedingungen gelesen, verstanden und innerlich geseufzt hat.</p>
+              <p><span className="font-bold text-slate-700">§ 1 – Zweck</span><br />
+              Diese App dient ausschließlich der Terminplanung unter Freunden. Wer nicht auf der Auswahlliste steht, hat hier nichts verloren.</p>
 
-              <p><span className="font-bold text-slate-700">§ 2 – Zweck der Plattform</span><br />
-              Die App dient ausschließlich der Koordination gemeinsamer Freizeitaktivitäten im Freundeskreis. Eine kommerzielle Nutzung ist untersagt. Eine romantische Nutzung ist ebenfalls untersagt. Insbesondere ist es strengstens verboten, die App als Ausrede zu verwenden, um Verabredungen zu verschieben, weil „man ja warten muss bis alle können".</p>
+              <p><span className="font-bold text-slate-700">§ 2 – Mitnahmeverbot</span><br />
+              Zu keinem über diese App geplanten Treffen darf eine Freundin, Partnerin oder sonstige romantisch assoziierte Begleitperson mitgebracht werden. Egal ob sie „nur kurz vorbeischaut" oder „eh bald geht". Die Antwort ist nein.</p>
 
-              <p><span className="font-bold text-slate-700">§ 3 – Mitnahmeverbot (WICHTIG. SEHR WICHTIG. BITTE LESEN.)</span><br />
-              Der Nutzer bestätigt hiermit feierlich, eidlich und mit vollständiger geistiger Zurechnungsfähigkeit, dass er zu keinem durch diese App geplanten Treffen seine Freundin, Partnerin, Begleiterin, Verlobte, Ehefrau oder sonstige romantisch assoziierte Begleitperson mitbringen wird. Dies gilt unabhängig davon, ob sie „nur kurz vorbeischaut", „eh bald geht" oder „wirklich total entspannt ist und niemanden stört". Sie stört. Wir wissen es. Du weißt es. Sie weiß es. § 3 weiß es.</p>
-
-              <p><span className="font-bold text-slate-700">§ 4 – Haftungsausschluss</span><br />
-              PapicinosPlanning übernimmt keine Haftung für: schlechtes Wetter, ausgebuchte Restaurants, Verfügbarkeitslücken durch spontane Beziehungsurlaube, Felix (H) der doch nicht kann, Felix (J) der auch nicht kann, sowie jegliche Form von Gruppenentscheidungsparalyse.</p>
-
-              <p><span className="font-bold text-slate-700">§ 5 – Salvatorische Klausel</span><br />
-              Sollte eine Bestimmung dieser AGB unwirksam sein, bleiben die übrigen Bestimmungen gültig. Sollten alle Bestimmungen unwirksam sein, bleibt § 3 trotzdem in Kraft. Immer.</p>
+              <p><span className="font-bold text-slate-700">§ 3 – Haftung</span><br />
+              Keine Haftung für schlechtes Wetter, ausgebuchte Locations oder einen der Felixe, der doch nicht kann.</p>
             </div>
 
             <form onSubmit={handleAgbSubmit} className="px-6 py-4 space-y-4">
@@ -121,7 +115,7 @@ export default function Home() {
                   className="mt-0.5 w-4 h-4 shrink-0 accent-blue-600 cursor-pointer"
                 />
                 <span className="text-xs text-slate-600 leading-relaxed group-hover:text-slate-800 transition-colors">
-                  Ich, <span className="font-bold text-slate-800">{selected}</span>, habe die Nutzungsbedingungen gelesen und stimme ihnen zu – insbesondere § 3. Ich werde niemanden mitbringen. Niemanden. Ich schwöre es beim Papicinos.
+                  Ich, <span className="font-bold text-slate-800">{selected}</span>, habe die Nutzungsbedingungen gelesen und stimme ihnen zu – insbesondere § 2.
                 </span>
               </label>
               <div className="flex gap-2">
