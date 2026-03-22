@@ -90,20 +90,20 @@ export default function Home() {
             <div className="px-6 pt-6 pb-4 border-b border-slate-100">
               <div className="text-center">
                 <div className="text-3xl mb-1">📜</div>
-                <h2 className="text-lg font-bold text-slate-800">Nutzungsbedingungen</h2>
-                <p className="text-xs text-slate-400 mt-0.5">PapicinosPlanning GmbH & Co. Freundeskreis KG · Version 4.20</p>
+                <h2 className="text-lg font-bold text-slate-800">Kurz noch was lesen</h2>
+                <p className="text-xs text-slate-400 mt-0.5">PapicinosPlanning GmbH & Co. Freundeskreis KG · v4.20</p>
               </div>
             </div>
 
             <div className="px-6 py-4 max-h-64 overflow-y-auto text-xs text-slate-500 space-y-3 leading-relaxed border-b border-slate-100 bg-slate-50/50">
-              <p><span className="font-bold text-slate-700">§ 1 – Zweck</span><br />
-              Diese App dient ausschließlich der Terminplanung unter Freunden. Wer nicht auf der Auswahlliste steht, hat hier nichts verloren.</p>
+              <p><span className="font-bold text-slate-700">§ 1 – Worum geht's</span><br />
+              Das hier ist unser internes Ding. Wer nicht auf der Liste steht, hat hier nichts zu suchen.</p>
 
-              <p><span className="font-bold text-slate-700">§ 2 – Mitnahmeverbot</span><br />
-              Zu keinem über diese App geplanten Treffen darf eine Freundin, Partnerin oder sonstige romantisch assoziierte Begleitperson mitgebracht werden. Egal ob sie „nur kurz vorbeischaut" oder „eh bald geht". Die Antwort ist nein.</p>
+              <p><span className="font-bold text-slate-700">§ 2 – Die wichtigste Regel</span><br />
+              Keine Freundinnen. Egal ob sie „nur kurz mitkommt", „eh bald geht" oder „ihr doch alle so gerne mag". Die Antwort ist nein. Immer.</p>
 
               <p><span className="font-bold text-slate-700">§ 3 – Haftung</span><br />
-              Keine Haftung für schlechtes Wetter, ausgebuchte Locations oder einen der Felixe, der doch nicht kann.</p>
+              Wir haften für nichts. Auch nicht für einen der Felixe, der wieder kurzfristig absagt.</p>
             </div>
 
             <form onSubmit={handleAgbSubmit} className="px-6 py-4 space-y-4">
@@ -115,7 +115,7 @@ export default function Home() {
                   className="mt-0.5 w-4 h-4 shrink-0 accent-blue-600 cursor-pointer"
                 />
                 <span className="text-xs text-slate-600 leading-relaxed group-hover:text-slate-800 transition-colors">
-                  Ich, <span className="font-bold text-slate-800">{selected}</span>, habe die Nutzungsbedingungen gelesen und stimme ihnen zu – insbesondere § 2.
+                  Ich, <span className="font-bold text-slate-800">{selected}</span>, hab das gelesen und bringe keine Freundin mit.
                 </span>
               </label>
               <div className="flex gap-2">
@@ -131,7 +131,7 @@ export default function Home() {
                   disabled={!agreed}
                   className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl py-2.5 text-sm transition-colors"
                 >
-                  Zustimmen & Weiter
+                  Alles klar, rein da →
                 </button>
               </div>
             </form>

@@ -382,7 +382,7 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
           </div>
           <div className="min-w-0">
             <p className="text-xs font-semibold text-orange-600 uppercase tracking-wide">
-              {missingMembers.length === MEMBERS.length ? "Noch keiner eingetragen" : "Wer fehlt noch?"}
+              {missingMembers.length === MEMBERS.length ? "Noch keiner hat Zeiten eingetragen 👀" : "Haben noch nichts eingetragen:"}
             </p>
             <p className="text-sm font-bold text-orange-900 truncate">
               {missingMembers.join(", ")}
@@ -410,7 +410,7 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
 
       {/* ═══ LEGEND ══════════════════════════════════════════════════════════ */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mb-3 text-xs text-slate-500">
-        <span className="font-semibold text-slate-600">Verfügbarkeit:</span>
+        <span className="font-semibold text-slate-600">Wer kann:</span>
         {([
           ["bg-slate-100 border border-slate-300", "0"],
           ["bg-green-100", "1"],
@@ -526,8 +526,8 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
           {/* ── Notes panel ──────────────────────────────────────────── */}
           <div className="bg-white/95 backdrop-blur rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-100">
-              <h2 className="text-sm font-bold text-slate-700">Notizen für diese Woche</h2>
-              <p className="text-xs text-slate-400 mt-0.5">Teile deinen Verfügbarkeitskontext</p>
+              <h2 className="text-sm font-bold text-slate-700">Was ist bei dir los?</h2>
+              <p className="text-xs text-slate-400 mt-0.5">Schreib kurz was du die Woche so hast</p>
             </div>
 
             <div className="p-4">
@@ -536,7 +536,7 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
                   <textarea
                     value={draftComment}
                     onChange={e => setDraftComment(e.target.value)}
-                    placeholder="z.B. Mo–Do nach der Arbeit frei, am WE lieber Sonntag…"
+                    placeholder="z.B. die Woche kacke viel Arbeit, Fr/Sa bin ich aber frei…"
                     rows={4}
                     maxLength={300}
                     autoFocus
@@ -599,7 +599,7 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
                   ))}
 
                   {comments.length === 0 && (
-                    <p className="text-xs text-slate-400 text-center py-2">Noch keine Notizen für diese Woche</p>
+                    <p className="text-xs text-slate-400 text-center py-2">Noch hat keiner was geschrieben</p>
                   )}
                 </div>
               )}
@@ -611,7 +611,7 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
             <div className="bg-white/95 backdrop-blur rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="px-4 py-3 border-b border-slate-100">
                 <h2 className="text-sm font-bold text-slate-700">📍 Wo treffen wir uns?</h2>
-                <p className="text-xs text-slate-400 mt-0.5">Vorschlagen & abstimmen</p>
+                <p className="text-xs text-slate-400 mt-0.5">Ideen rein, abstimmen, fertig</p>
               </div>
 
               <div className="p-4 space-y-2.5">
@@ -680,11 +680,11 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
                     >+</button>
                   </div>
                 ) : (
-                  <p className="text-[10px] text-slate-400 text-center">Du hast bereits einen Ort vorgeschlagen. Lösche ihn, um einen neuen vorzuschlagen.</p>
+                  <p className="text-[10px] text-slate-400 text-center">Du hast schon einen Ort vorgeschlagen. Lösch ihn wenn du einen anderen willst.</p>
                 )}
 
                 {locationSuggestions.length === 0 && (
-                  <p className="text-xs text-slate-400 text-center py-1">Noch keine Ortsvorschläge</p>
+                  <p className="text-xs text-slate-400 text-center py-1">Noch keine Ideen — los jetzt</p>
                 )}
               </div>
             </div>
@@ -698,7 +698,7 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
           <SlotInfoBar slotKey={infoSlot} allSlots={allSlots} currentUser={currentUser} />
         ) : (
           <p className="text-xs text-slate-500 bg-white/80 backdrop-blur rounded-full py-1.5 px-5 shadow-sm border border-slate-100">
-            Tippen oder ziehen zum Auswählen · Slot antippen um zu sehen wer verfügbar ist
+            Ziehen zum Auswählen · Antippen um zu sehen wer kann
           </p>
         )}
       </div>
@@ -759,7 +759,7 @@ function BestSlotBanner({ slot, count, onConfirm }: { slot: string; count: numbe
       <div className="flex items-center gap-3 min-w-0">
         <div className="w-8 h-8 rounded-xl bg-amber-400 flex items-center justify-center shrink-0 text-sm">★</div>
         <div className="min-w-0">
-          <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-0.5">Bester Zeitslot</p>
+          <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-0.5">Da können die meisten</p>
           <p className="text-sm font-bold text-amber-900 truncate">{dayLabel}</p>
           <p className="text-xs text-amber-700">{timeLabel} · {count} {count === 1 ? "Person" : "Personen"}</p>
         </div>
@@ -805,10 +805,10 @@ function ConfirmedEventBanner({
       <div className="flex items-center gap-3 min-w-0">
         <div className="w-8 h-8 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0 text-sm text-white">📌</div>
         <div className="min-w-0">
-          <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wide mb-0.5">Termin bestätigt!</p>
+          <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wide mb-0.5">Läuft. Termin steht.</p>
           <p className="text-sm font-bold text-emerald-900 truncate">{dayLabel}</p>
           <p className="text-xs text-emerald-700">{timeLabel} · {attendees.size} {attendees.size === 1 ? "Person" : "Personen"} dabei</p>
-          <p className="text-[10px] text-emerald-500 mt-0.5">Bestätigt von {event.confirmed_by}</p>
+          <p className="text-[10px] text-emerald-500 mt-0.5">{event.confirmed_by} hat den Termin gesetzt</p>
         </div>
       </div>
       <div className="flex items-center gap-2 shrink-0">
