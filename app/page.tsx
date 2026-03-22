@@ -53,7 +53,7 @@ export default function Home() {
             <div className="text-center mb-6">
               <div className="text-4xl mb-2">🅿️</div>
               <h1 className="text-2xl font-bold text-slate-800">PapicinosPlanning</h1>
-              <p className="text-slate-500 text-sm mt-1">Wann können die Jungs?</p>
+              <p className="text-slate-500 text-sm mt-1">Jungs wann habt ihr Zeit?</p>
             </div>
             <form onSubmit={handlePickSubmit} className="space-y-4">
               <div>

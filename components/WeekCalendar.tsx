@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase, type Availability } from "@/lib/supabase";
 
 const HOURS = Array.from({ length: 15 }, (_, i) => i + 8); // 8–22
+const MEMBERS = ["David", "Jakob", "Julius", "Felix (J)", "Felix (H)"];
 
 function getWeekStart(date: Date): Date {
   const d = new Date(date);
@@ -58,7 +59,7 @@ function generateICS(slot: string) {
     `DTSTAMP:${new Date().toISOString().replace(/[-:]/g,"").slice(0,15)}Z`,
     `DTSTART:${y}${p(m)}${p(d)}T${p(hour)}0000`,
     `DTEND:${y}${p(m)}${p(d)}T${p(hour+1)}0000`,
-    "SUMMARY:Group Meeting (PapicinosPlanning)",
+    "SUMMARY:Papicinos Treffen",
     "END:VEVENT","END:VCALENDAR",
   ].join("\r\n");
 }
@@ -72,6 +73,9 @@ function downloadICS(slot: string) {
 }
 
 type WeekComment = { user_name: string; week_start: string; comment: string };
+type ConfirmedEvent = { id: string; week_start: string; slot_key: string; confirmed_by: string };
+type LocationSuggestion = { id: string; week_start: string; location: string; suggested_by: string };
+type LocationVote = { id: string; suggestion_id: string; user_name: string };
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -85,6 +89,12 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
   const [myComment,     setMyComment]     = useState("");
   const [editingComment,setEditingComment]= useState(false);
   const [draftComment,  setDraftComment]  = useState("");
+
+  // New state
+  const [confirmedEvent, setConfirmedEvent] = useState<ConfirmedEvent | null>(null);
+  const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
+  const [locationVotes, setLocationVotes] = useState<LocationVote[]>([]);
+  const [newLocation, setNewLocation] = useState("");
 
   const dragging      = useRef(false);
   const dragMode      = useRef<"add"|"remove">("add");
@@ -123,16 +133,43 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
     if (mine) { setMyComment(mine.comment); setDraftComment(mine.comment); }
   }, [currentUser, weekKey]);
 
-  useEffect(() => { loadAll(); },      [loadAll]);
-  useEffect(() => { loadComments(); }, [loadComments]);
+  const loadConfirmedEvent = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("confirmed_events").select("*").eq("week_start", weekKey).maybeSingle();
+    if (error) { setConfirmedEvent(null); return; }
+    setConfirmedEvent(data);
+  }, [weekKey]);
+
+  const loadLocations = useCallback(async () => {
+    const { data: suggestions, error } = await supabase
+      .from("location_suggestions").select("*").eq("week_start", weekKey);
+    if (error) { setLocationSuggestions([]); setLocationVotes([]); return; }
+    setLocationSuggestions(suggestions ?? []);
+    if (suggestions?.length) {
+      const ids = suggestions.map(s => s.id);
+      const { data: votes } = await supabase
+        .from("location_votes").select("*").in("suggestion_id", ids);
+      setLocationVotes(votes ?? []);
+    } else {
+      setLocationVotes([]);
+    }
+  }, [weekKey]);
+
+  useEffect(() => { loadAll(); },             [loadAll]);
+  useEffect(() => { loadComments(); },        [loadComments]);
+  useEffect(() => { loadConfirmedEvent(); },  [loadConfirmedEvent]);
+  useEffect(() => { loadLocations(); },       [loadLocations]);
 
   useEffect(() => {
     const ch = supabase.channel("rt")
-      .on("postgres_changes", { event:"*", schema:"public", table:"availabilities" },  () => loadAll())
-      .on("postgres_changes", { event:"*", schema:"public", table:"week_comments" }, () => loadComments())
+      .on("postgres_changes", { event:"*", schema:"public", table:"availabilities" },      () => loadAll())
+      .on("postgres_changes", { event:"*", schema:"public", table:"week_comments" },       () => loadComments())
+      .on("postgres_changes", { event:"*", schema:"public", table:"confirmed_events" },    () => loadConfirmedEvent())
+      .on("postgres_changes", { event:"*", schema:"public", table:"location_suggestions" },() => loadLocations())
+      .on("postgres_changes", { event:"*", schema:"public", table:"location_votes" },      () => loadLocations())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [loadAll, loadComments]);
+  }, [loadAll, loadComments, loadConfirmedEvent, loadLocations]);
 
   // ── Slots ─────────────────────────────────────────────────────────────────
 
@@ -193,6 +230,49 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
     loadComments();
   }
 
+  // ── Event Confirmation ────────────────────────────────────────────────────
+
+  async function confirmEvent(sk: string) {
+    await supabase.from("confirmed_events").upsert({ week_start: weekKey, slot_key: sk, confirmed_by: currentUser });
+    loadConfirmedEvent();
+  }
+
+  async function cancelEvent() {
+    await supabase.from("confirmed_events").delete().eq("week_start", weekKey);
+    setConfirmedEvent(null);
+  }
+
+  // ── Location Suggestions ─────────────────────────────────────────────────
+
+  async function addLocationSuggestion() {
+    const text = newLocation.trim();
+    if (!text) return;
+    // Check if user already has a suggestion this week
+    const existing = locationSuggestions.find(s => s.suggested_by === currentUser);
+    if (existing) {
+      await supabase.from("location_suggestions").update({ location: text }).eq("id", existing.id);
+    } else {
+      await supabase.from("location_suggestions").insert({ week_start: weekKey, location: text, suggested_by: currentUser });
+    }
+    setNewLocation("");
+    loadLocations();
+  }
+
+  async function toggleLocationVote(suggestionId: string) {
+    const existing = locationVotes.find(v => v.suggestion_id === suggestionId && v.user_name === currentUser);
+    if (existing) {
+      await supabase.from("location_votes").delete().eq("id", existing.id);
+    } else {
+      await supabase.from("location_votes").insert({ suggestion_id: suggestionId, user_name: currentUser });
+    }
+    loadLocations();
+  }
+
+  async function deleteLocationSuggestion(id: string) {
+    await supabase.from("location_suggestions").delete().eq("id", id);
+    loadLocations();
+  }
+
   // ── Derived ───────────────────────────────────────────────────────────────
 
   const bestSlot = (() => {
@@ -207,6 +287,25 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
   const isPastWeek  = weekStart < currentWeekStart;
   const isFutureWeek = weekStart > currentWeekStart;
 
+  // Wer fehlt noch?
+  const weekDates = weekDays.map(d => formatDate(d));
+  const membersWithSlots = new Set<string>();
+  allSlots.forEach((users, key) => {
+    const slotDate = key.split("_")[0];
+    if (weekDates.includes(slotDate)) {
+      users.forEach(u => membersWithSlots.add(u));
+    }
+  });
+  const missingMembers = MEMBERS.filter(m => !membersWithSlots.has(m));
+
+  // Votes per suggestion
+  function votesForSuggestion(id: string) {
+    return locationVotes.filter(v => v.suggestion_id === id);
+  }
+  function hasVoted(suggestionId: string) {
+    return locationVotes.some(v => v.suggestion_id === suggestionId && v.user_name === currentUser);
+  }
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -216,7 +315,6 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
       onMouseLeave={handleMouseUp}
     >
       {/* ═══ CONTROLS BAR ═══════════════════════════════════════════════════ */}
-      {/* On desktop: single row. On mobile: stacked. */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
 
         {/* Week navigation */}
@@ -253,7 +351,7 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
           >Heute</button>
         </div>
 
-        {/* User filter — scrollable pill row */}
+        {/* User filter */}
         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-0.5">
           <button
             onClick={() => setViewUser(null)}
@@ -276,8 +374,39 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
         </div>
       </div>
 
-      {/* ═══ BEST SLOT BANNER ════════════════════════════════════════════════ */}
-      {bestSlot && <BestSlotBanner slot={bestSlot.key} count={bestSlot.count} />}
+      {/* ═══ WER FEHLT NOCH ════════════════════════════════════════════════ */}
+      {missingMembers.length > 0 && (
+        <div className="mb-3 flex items-center gap-3 bg-orange-50 border border-orange-200 rounded-2xl px-4 py-2.5 shadow-sm">
+          <div className="w-8 h-8 rounded-xl bg-orange-400 flex items-center justify-center shrink-0 text-sm">
+            👀
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-orange-600 uppercase tracking-wide">
+              {missingMembers.length === MEMBERS.length ? "Noch keiner eingetragen" : "Wer fehlt noch?"}
+            </p>
+            <p className="text-sm font-bold text-orange-900 truncate">
+              {missingMembers.join(", ")}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ CONFIRMED EVENT BANNER ════════════════════════════════════════ */}
+      {confirmedEvent ? (
+        <ConfirmedEventBanner
+          event={confirmedEvent}
+          allSlots={allSlots}
+          onCancel={cancelEvent}
+        />
+      ) : (
+        bestSlot && (
+          <BestSlotBanner
+            slot={bestSlot.key}
+            count={bestSlot.count}
+            onConfirm={() => confirmEvent(bestSlot.key)}
+          />
+        )
+      )}
 
       {/* ═══ LEGEND ══════════════════════════════════════════════════════════ */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mb-3 text-xs text-slate-500">
@@ -345,6 +474,7 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
                   const count  = usersInSlot.size;
                   const isMine = mySlots.has(key);
                   const isBest = bestSlot?.key === key;
+                  const isConfirmed = confirmedEvent?.slot_key === key;
                   const isWeekend = di >= 5;
 
                   let cellClass: string;
@@ -369,13 +499,17 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
                         transition-colors relative select-none
                         ${cellClass}
                         ${formatDate(day) === today ? "border-l-2 border-l-blue-300" : ""}
-                        ${isBest && !viewUser ? "ring-1 ring-amber-400 ring-inset z-10" : ""}
+                        ${isConfirmed && !viewUser ? "ring-2 ring-emerald-500 ring-inset z-10" : ""}
+                        ${isBest && !isConfirmed && !viewUser ? "ring-1 ring-amber-400 ring-inset z-10" : ""}
                       `}
                       onMouseDown={() => handleMouseDown(key)}
                       onMouseEnter={() => handleMouseEnter(key)}
                       onTouchEnd={e => handleTouchEnd(e, key)}
                     >
-                      {isBest && !viewUser && count > 0 && (
+                      {isConfirmed && !viewUser && (
+                        <span className="absolute top-0 right-0 text-[8px] leading-none bg-emerald-500 text-white px-0.5 rounded-bl font-bold z-10">📌</span>
+                      )}
+                      {isBest && !isConfirmed && !viewUser && count > 0 && (
                         <span className="absolute top-0 right-0 text-[8px] leading-none bg-amber-400 text-amber-900 px-0.5 rounded-bl font-bold z-10">★</span>
                       )}
                     </div>
@@ -386,8 +520,10 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
           </div>
         </div>
 
-        {/* ── Notes panel ──────────────────────────────────────────────── */}
-        <div className="w-full lg:w-72 lg:shrink-0">
+        {/* ── Sidebar ────────────────────────────────────────────────── */}
+        <div className="w-full lg:w-72 lg:shrink-0 space-y-3">
+
+          {/* ── Notes panel ──────────────────────────────────────────── */}
           <div className="bg-white/95 backdrop-blur rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-100">
               <h2 className="text-sm font-bold text-slate-700">Notizen für diese Woche</h2>
@@ -425,7 +561,6 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {/* My note */}
                   {myComment ? (
                     <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
                       <div className="flex items-center justify-between mb-2">
@@ -453,7 +588,6 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
                     </button>
                   )}
 
-                  {/* Others' notes */}
                   {comments.filter(c => c.user_name !== currentUser).map(c => (
                     <div key={c.user_name} className="bg-slate-50 border border-slate-100 rounded-xl p-3">
                       <div className="flex items-center gap-1.5 mb-2">
@@ -471,6 +605,90 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
               )}
             </div>
           </div>
+
+          {/* ── Location Suggestions ─────────────────────────────────── */}
+          {confirmedEvent && (
+            <div className="bg-white/95 backdrop-blur rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-100">
+                <h2 className="text-sm font-bold text-slate-700">📍 Wo treffen wir uns?</h2>
+                <p className="text-xs text-slate-400 mt-0.5">Vorschlagen & abstimmen</p>
+              </div>
+
+              <div className="p-4 space-y-2.5">
+                {/* Suggestions sorted by votes */}
+                {[...locationSuggestions]
+                  .sort((a, b) => votesForSuggestion(b.id).length - votesForSuggestion(a.id).length)
+                  .map(s => {
+                    const votes = votesForSuggestion(s.id);
+                    const voted = hasVoted(s.id);
+                    const isMine = s.suggested_by === currentUser;
+                    return (
+                      <div key={s.id} className={`rounded-xl border p-3 transition-colors ${
+                        voted ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-100"
+                      }`}>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-slate-700 truncate">{s.location}</p>
+                            <p className="text-[10px] text-slate-400">von {s.suggested_by}</p>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              onClick={() => toggleLocationVote(s.id)}
+                              className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${
+                                voted
+                                  ? "bg-emerald-500 text-white hover:bg-emerald-600"
+                                  : "bg-white text-slate-500 border border-slate-200 hover:border-emerald-300 hover:text-emerald-600"
+                              }`}
+                            >
+                              👍 {votes.length}
+                            </button>
+                            {isMine && (
+                              <button
+                                onClick={() => deleteLocationSuggestion(s.id)}
+                                className="text-xs text-slate-300 hover:text-red-400 transition-colors p-1"
+                                title="Vorschlag löschen"
+                              >✕</button>
+                            )}
+                          </div>
+                        </div>
+                        {votes.length > 0 && (
+                          <p className="text-[10px] text-slate-400 mt-1.5">
+                            {votes.map(v => v.user_name).join(", ")}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })
+                }
+
+                {/* Add suggestion */}
+                {!locationSuggestions.find(s => s.suggested_by === currentUser) ? (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newLocation}
+                      onChange={e => setNewLocation(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && addLocationSuggestion()}
+                      placeholder="Ort vorschlagen…"
+                      maxLength={100}
+                      className="flex-1 text-sm border border-slate-200 rounded-xl px-3 py-2 text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50"
+                    />
+                    <button
+                      onClick={addLocationSuggestion}
+                      disabled={!newLocation.trim()}
+                      className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl px-3 py-2 transition-colors shadow-sm"
+                    >+</button>
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-slate-400 text-center">Du hast bereits einen Ort vorgeschlagen. Lösche ihn, um einen neuen vorzuschlagen.</p>
+                )}
+
+                {locationSuggestions.length === 0 && (
+                  <p className="text-xs text-slate-400 text-center py-1">Noch keine Ortsvorschläge</p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -487,8 +705,6 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
     </div>
   );
 }
-
-// ─── Best Slot Banner ─────────────────────────────────────────────────────────
 
 // ─── Slot Info Bar ────────────────────────────────────────────────────────────
 
@@ -532,11 +748,11 @@ function SlotInfoBar({
 
 // ─── Best Slot Banner ─────────────────────────────────────────────────────────
 
-function BestSlotBanner({ slot, count }: { slot: string; count: number }) {
+function BestSlotBanner({ slot, count, onConfirm }: { slot: string; count: number; onConfirm: () => void }) {
   const { date, hour } = parseSlotKey(slot);
   const dateObj  = new Date(`${date}T00:00:00`);
   const dayLabel = dateObj.toLocaleDateString("de-DE", { weekday: "long", month: "short", day: "numeric" });
-  const timeLabel = `${String(hour).padStart(2,"0")}:00 – ${String(hour+1).padStart(2,"00")}:00`;
+  const timeLabel = `${String(hour).padStart(2,"0")}:00 – ${String(hour+1).padStart(2,"0")}:00`;
 
   return (
     <div className="mb-3 flex items-center justify-between gap-4 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 shadow-sm">
@@ -548,15 +764,70 @@ function BestSlotBanner({ slot, count }: { slot: string; count: number }) {
           <p className="text-xs text-amber-700">{timeLabel} · {count} {count === 1 ? "Person" : "Personen"}</p>
         </div>
       </div>
-      <button
-        onClick={() => downloadICS(slot)}
-        className="shrink-0 flex items-center gap-1.5 bg-amber-400 hover:bg-amber-500 active:bg-amber-600 text-amber-900 font-bold text-xs px-3.5 py-2 rounded-xl transition-colors shadow-sm whitespace-nowrap"
-      >
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-        </svg>
-        Export .ics
-      </button>
+      <div className="flex items-center gap-2 shrink-0">
+        <button
+          onClick={onConfirm}
+          className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-colors shadow-sm whitespace-nowrap"
+        >
+          📌 Bestätigen
+        </button>
+        <button
+          onClick={() => downloadICS(slot)}
+          className="flex items-center gap-1.5 bg-amber-400 hover:bg-amber-500 active:bg-amber-600 text-amber-900 font-bold text-xs px-3.5 py-2 rounded-xl transition-colors shadow-sm whitespace-nowrap"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          .ics
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Confirmed Event Banner ───────────────────────────────────────────────────
+
+function ConfirmedEventBanner({
+  event, allSlots, onCancel,
+}: {
+  event: ConfirmedEvent;
+  allSlots: Map<string, Set<string>>;
+  onCancel: () => void;
+}) {
+  const { date, hour } = parseSlotKey(event.slot_key);
+  const dateObj  = new Date(`${date}T00:00:00`);
+  const dayLabel = dateObj.toLocaleDateString("de-DE", { weekday: "long", month: "short", day: "numeric" });
+  const timeLabel = `${String(hour).padStart(2,"0")}:00 – ${String(hour+1).padStart(2,"0")}:00`;
+  const attendees = allSlots.get(event.slot_key) ?? new Set<string>();
+
+  return (
+    <div className="mb-3 flex items-center justify-between gap-4 bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3 shadow-sm">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="w-8 h-8 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0 text-sm text-white">📌</div>
+        <div className="min-w-0">
+          <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wide mb-0.5">Termin bestätigt!</p>
+          <p className="text-sm font-bold text-emerald-900 truncate">{dayLabel}</p>
+          <p className="text-xs text-emerald-700">{timeLabel} · {attendees.size} {attendees.size === 1 ? "Person" : "Personen"} dabei</p>
+          <p className="text-[10px] text-emerald-500 mt-0.5">Bestätigt von {event.confirmed_by}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <button
+          onClick={() => downloadICS(event.slot_key)}
+          className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-colors shadow-sm whitespace-nowrap"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          .ics
+        </button>
+        <button
+          onClick={onCancel}
+          className="flex items-center gap-1.5 bg-white hover:bg-red-50 text-red-400 hover:text-red-600 border border-red-200 font-bold text-xs px-3.5 py-2 rounded-xl transition-colors shadow-sm whitespace-nowrap"
+        >
+          Absagen
+        </button>
+      </div>
     </div>
   );
 }
