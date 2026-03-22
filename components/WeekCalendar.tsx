@@ -310,22 +310,21 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
 
   return (
     <div
-      className="py-3 sm:py-4 max-w-6xl mx-auto overflow-x-auto"
+      className="px-3 py-3 sm:px-5 sm:py-4 max-w-6xl mx-auto"
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
-      <div className="min-w-[540px] px-3 sm:px-5">
 
       {/* ═══ CONTROLS BAR ═══════════════════════════════════════════════════ */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
 
         {/* Week navigation */}
-        <div className="flex items-center gap-1 bg-white/90 backdrop-blur rounded-2xl border border-slate-200 shadow-sm px-2 py-1.5 self-start sm:self-auto">
+        <div className="flex items-center gap-1 bg-white/90 backdrop-blur rounded-2xl border border-slate-200 shadow-sm px-2 py-1.5 w-full sm:w-auto">
           <button
             onClick={() => setWeekStart(w => addDays(w, -7))}
             className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 active:bg-slate-200 text-lg font-bold transition-colors"
           >‹</button>
-          <div className="text-center px-2 min-w-[160px]">
+          <div className="text-center px-2 flex-1 sm:min-w-[160px]">
             <span className="text-sm font-semibold text-slate-800">
               {weekStart.toLocaleDateString("de-DE", { month: "short", day: "numeric" })}
               {" – "}
@@ -435,8 +434,8 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
       <div className="flex flex-col lg:flex-row gap-3 lg:items-start">
 
         {/* ── Calendar ─────────────────────────────────────────────────── */}
-        <div className={`flex-1 min-w-0 rounded-2xl border shadow-sm transition-colors ${isPastWeek ? "border-amber-200 opacity-75" : "border-slate-200"}`}>
-          <div className="bg-white no-select" style={{ userSelect: "none" }}>
+        <div className={`flex-1 min-w-0 overflow-x-auto rounded-2xl border shadow-sm transition-colors ${isPastWeek ? "border-amber-200 opacity-75" : "border-slate-200"}`}>
+          <div className="bg-white min-w-[540px] no-select" style={{ userSelect: "none" }}>
 
             {/* Day headers */}
             <div className="grid" style={{ gridTemplateColumns: "48px repeat(7, 1fr)" }}>
@@ -704,8 +703,6 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
           </p>
         )}
       </div>
-
-      </div>{/* end min-w-[540px] */}
     </div>
   );
 }
@@ -759,7 +756,7 @@ function BestSlotBanner({ slot, count, onConfirm }: { slot: string; count: numbe
   const timeLabel = `${String(hour).padStart(2,"0")}:00 – ${String(hour+1).padStart(2,"0")}:00`;
 
   return (
-    <div className="mb-3 flex items-center justify-between gap-4 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 shadow-sm">
+    <div className="mb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 shadow-sm">
       <div className="flex items-center gap-3 min-w-0">
         <div className="w-8 h-8 rounded-xl bg-amber-400 flex items-center justify-center shrink-0 text-sm">★</div>
         <div className="min-w-0">
@@ -771,13 +768,13 @@ function BestSlotBanner({ slot, count, onConfirm }: { slot: string; count: numbe
       <div className="flex items-center gap-2 shrink-0">
         <button
           onClick={onConfirm}
-          className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-colors shadow-sm whitespace-nowrap"
+          className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-colors shadow-sm whitespace-nowrap"
         >
           📌 Bestätigen
         </button>
         <button
           onClick={() => downloadICS(slot)}
-          className="flex items-center gap-1.5 bg-amber-400 hover:bg-amber-500 active:bg-amber-600 text-amber-900 font-bold text-xs px-3.5 py-2 rounded-xl transition-colors shadow-sm whitespace-nowrap"
+          className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-amber-400 hover:bg-amber-500 active:bg-amber-600 text-amber-900 font-bold text-xs px-3.5 py-2 rounded-xl transition-colors shadow-sm whitespace-nowrap"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -805,7 +802,7 @@ function ConfirmedEventBanner({
   const attendees = allSlots.get(event.slot_key) ?? new Set<string>();
 
   return (
-    <div className="mb-3 flex items-center justify-between gap-4 bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3 shadow-sm">
+    <div className="mb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3 shadow-sm">
       <div className="flex items-center gap-3 min-w-0">
         <div className="w-8 h-8 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0 text-sm text-white">📌</div>
         <div className="min-w-0">
@@ -818,7 +815,7 @@ function ConfirmedEventBanner({
       <div className="flex items-center gap-2 shrink-0">
         <button
           onClick={() => downloadICS(event.slot_key)}
-          className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-colors shadow-sm whitespace-nowrap"
+          className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-colors shadow-sm whitespace-nowrap"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -827,7 +824,7 @@ function ConfirmedEventBanner({
         </button>
         <button
           onClick={onCancel}
-          className="flex items-center gap-1.5 bg-white hover:bg-red-50 text-red-400 hover:text-red-600 border border-red-200 font-bold text-xs px-3.5 py-2 rounded-xl transition-colors shadow-sm whitespace-nowrap"
+          className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-white hover:bg-red-50 text-red-400 hover:text-red-600 border border-red-200 font-bold text-xs px-3.5 py-2 rounded-xl transition-colors shadow-sm whitespace-nowrap"
         >
           Absagen
         </button>
