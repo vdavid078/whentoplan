@@ -100,7 +100,7 @@ export default function Home() {
               Das hier ist unser internes Ding. Wer nicht auf der Liste steht, hat hier nichts zu suchen.</p>
 
               <p><span className="font-bold text-slate-700">§ 2 – Die wichtigste Regel</span><br />
-              Keine Freundinnen. Egal ob sie „nur kurz mitkommt", „eh bald geht" oder „ihr doch alle so gerne mag". Die Antwort ist nein. Immer.</p>
+              Keine Freundinnen. Egal ob sie „nur kurz mitkommt", „eh bald geht" oder „ihr sie doch alle so gerne mögt". Die Antwort ist nein. Immer.</p>
 
               <p><span className="font-bold text-slate-700">§ 3 – Haftung</span><br />
               Wir haften für nichts. Auch nicht für einen der Felixe, der wieder kurzfristig absagt.</p>
