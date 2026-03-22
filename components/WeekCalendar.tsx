@@ -432,7 +432,7 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
       </div>
 
       {/* ═══ MAIN LAYOUT ═════════════════════════════════════════════════════ */}
-      <div className="flex flex-col lg:flex-row gap-3 items-start">
+      <div className="flex flex-col lg:flex-row gap-3 lg:items-start">
 
         {/* ── Calendar ─────────────────────────────────────────────────── */}
         <div className={`flex-1 min-w-0 rounded-2xl border shadow-sm transition-colors ${isPastWeek ? "border-amber-200 opacity-75" : "border-slate-200"}`}>
