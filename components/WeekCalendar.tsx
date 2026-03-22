@@ -310,10 +310,12 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
 
   return (
     <div
-      className="px-3 py-3 sm:px-5 sm:py-4 max-w-6xl mx-auto"
+      className="py-3 sm:py-4 max-w-6xl mx-auto overflow-x-auto"
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
+      <div className="min-w-[540px] px-3 sm:px-5">
+
       {/* ═══ CONTROLS BAR ═══════════════════════════════════════════════════ */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
 
@@ -433,8 +435,8 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
       <div className="flex flex-col lg:flex-row gap-3 items-start">
 
         {/* ── Calendar ─────────────────────────────────────────────────── */}
-        <div className={`flex-1 min-w-0 overflow-x-auto rounded-2xl border shadow-sm transition-colors ${isPastWeek ? "border-amber-200 opacity-75" : "border-slate-200"}`}>
-          <div className="bg-white min-w-[540px] no-select" style={{ userSelect: "none" }}>
+        <div className={`flex-1 min-w-0 rounded-2xl border shadow-sm transition-colors ${isPastWeek ? "border-amber-200 opacity-75" : "border-slate-200"}`}>
+          <div className="bg-white no-select" style={{ userSelect: "none" }}>
 
             {/* Day headers */}
             <div className="grid" style={{ gridTemplateColumns: "48px repeat(7, 1fr)" }}>
@@ -702,6 +704,8 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
           </p>
         )}
       </div>
+
+      </div>{/* end min-w-[540px] */}
     </div>
   );
 }
