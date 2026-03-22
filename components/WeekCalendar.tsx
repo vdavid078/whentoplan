@@ -35,7 +35,7 @@ function parseSlotKey(key: string): { date: string; hour: number } {
   return { date, hour: parseInt(hourStr, 10) };
 }
 
-const WEEKDAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WEEKDAY_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
 function heatmapColor(count: number, isCurrentUser: boolean) {
   const base =
@@ -227,18 +227,18 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
           >‹</button>
           <div className="text-center px-2 min-w-[160px]">
             <span className="text-sm font-semibold text-slate-800">
-              {weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+              {weekStart.toLocaleDateString("de-DE", { month: "short", day: "numeric" })}
               {" – "}
-              {addDays(weekStart, 6).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+              {addDays(weekStart, 6).toLocaleDateString("de-DE", { month: "short", day: "numeric", year: "numeric" })}
             </span>
             {isPastWeek && (
               <div className="text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5 mt-0.5 leading-tight">
-                Past week
+                Vergangene Woche
               </div>
             )}
             {isFutureWeek && (
               <div className="text-[10px] font-semibold text-violet-600 bg-violet-50 border border-violet-200 rounded-full px-2 py-0.5 mt-0.5 leading-tight">
-                Upcoming
+                Kommende Woche
               </div>
             )}
           </div>
@@ -250,7 +250,7 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
           <button
             onClick={() => setWeekStart(getWeekStart(new Date()))}
             className="text-xs font-semibold text-blue-600 hover:bg-blue-50 active:bg-blue-100 px-2.5 py-1.5 rounded-lg transition-colors"
-          >Today</button>
+          >Heute</button>
         </div>
 
         {/* User filter — scrollable pill row */}
@@ -262,7 +262,7 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
                 ? "bg-blue-600 text-white border-blue-600 shadow-sm"
                 : "bg-white/90 text-slate-500 border-slate-200 hover:border-slate-300 hover:text-slate-700"
             }`}
-          >Everyone</button>
+          >Alle</button>
           {allUsers.map(u => (
             <button key={u}
               onClick={() => setViewUser(viewUser === u ? null : u)}
@@ -281,7 +281,7 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
 
       {/* ═══ LEGEND ══════════════════════════════════════════════════════════ */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mb-3 text-xs text-slate-500">
-        <span className="font-semibold text-slate-600">Availability:</span>
+        <span className="font-semibold text-slate-600">Verfügbarkeit:</span>
         {([
           ["bg-slate-100 border border-slate-300", "0"],
           ["bg-green-100", "1"],
@@ -296,7 +296,7 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
         ))}
         <span className="flex items-center gap-1.5">
           <span className="inline-block w-3 h-3 rounded-sm bg-blue-100 ring-2 ring-blue-500 ring-inset" />
-          Your selection
+          Deine Auswahl
         </span>
       </div>
 
@@ -363,8 +363,8 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
                   return (
                     <div key={di}
                       title={count > 0
-                        ? `${count} available: ${Array.from(usersInSlot).join(", ")}`
-                        : "No one available"}
+                        ? `${count} verfügbar: ${Array.from(usersInSlot).join(", ")}`
+                        : "Niemand verfügbar"}
                       className={`border-b border-r last:border-r-0 border-slate-300 h-9 cursor-pointer
                         transition-colors relative select-none
                         ${cellClass}
@@ -390,8 +390,8 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
         <div className="w-full lg:w-72 lg:shrink-0">
           <div className="bg-white/95 backdrop-blur rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-100">
-              <h2 className="text-sm font-bold text-slate-700">Notes for this week</h2>
-              <p className="text-xs text-slate-400 mt-0.5">Share your availability context</p>
+              <h2 className="text-sm font-bold text-slate-700">Notizen für diese Woche</h2>
+              <p className="text-xs text-slate-400 mt-0.5">Teile deinen Verfügbarkeitskontext</p>
             </div>
 
             <div className="p-4">
@@ -400,7 +400,7 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
                   <textarea
                     value={draftComment}
                     onChange={e => setDraftComment(e.target.value)}
-                    placeholder="e.g. Free after work Mon–Thu, prefer Sunday on weekends…"
+                    placeholder="z.B. Mo–Do nach der Arbeit frei, am WE lieber Sonntag…"
                     rows={4}
                     maxLength={300}
                     autoFocus
@@ -409,17 +409,17 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
                   <div className="flex gap-2 mt-2.5">
                     <button onClick={saveComment}
                       className="flex-1 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold rounded-xl py-2 transition-colors shadow-sm">
-                      Save
+                      Speichern
                     </button>
                     <button onClick={() => { setEditingComment(false); setDraftComment(myComment); }}
                       className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-semibold rounded-xl py-2 transition-colors">
-                      Cancel
+                      Abbrechen
                     </button>
                   </div>
                   {myComment && (
                     <button onClick={deleteComment}
                       className="mt-2 w-full text-xs text-red-400 hover:text-red-600 py-1.5 rounded-lg hover:bg-red-50 transition-colors">
-                      Delete note
+                      Notiz löschen
                     </button>
                   )}
                 </div>
@@ -432,12 +432,12 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
                         <div className="flex items-center gap-1.5">
                           <div className="w-2 h-2 rounded-full bg-blue-500" />
                           <span className="text-xs font-bold text-blue-700">{currentUser}</span>
-                          <span className="text-xs text-blue-400">(you)</span>
+                          <span className="text-xs text-blue-400">(du)</span>
                         </div>
                         <button
                           onClick={() => { setEditingComment(true); setDraftComment(myComment); }}
                           className="text-xs text-blue-400 hover:text-blue-600 font-semibold px-2 py-0.5 rounded-md hover:bg-blue-100 transition-colors">
-                          Edit
+                          Bearbeiten
                         </button>
                       </div>
                       <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{myComment}</p>
@@ -449,7 +449,7 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                       </svg>
-                      Add your note
+                      Notiz hinzufügen
                     </button>
                   )}
 
@@ -465,7 +465,7 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
                   ))}
 
                   {comments.length === 0 && (
-                    <p className="text-xs text-slate-400 text-center py-2">No notes yet for this week</p>
+                    <p className="text-xs text-slate-400 text-center py-2">Noch keine Notizen für diese Woche</p>
                   )}
                 </div>
               )}
@@ -480,7 +480,7 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
           <SlotInfoBar slotKey={infoSlot} allSlots={allSlots} currentUser={currentUser} />
         ) : (
           <p className="text-xs text-slate-500 bg-white/80 backdrop-blur rounded-full py-1.5 px-5 shadow-sm border border-slate-100">
-            Tap or drag to toggle · Tap a slot to see who&apos;s available
+            Tippen oder ziehen zum Auswählen · Slot antippen um zu sehen wer verfügbar ist
           </p>
         )}
       </div>
@@ -501,7 +501,7 @@ function SlotInfoBar({
 }) {
   const { date, hour } = parseSlotKey(slotKey);
   const dateObj = new Date(`${date}T00:00:00`);
-  const dayLabel = dateObj.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  const dayLabel = dateObj.toLocaleDateString("de-DE", { weekday: "short", month: "short", day: "numeric" });
   const timeLabel = `${String(hour).padStart(2,"0")}:00`;
   const usersInSlot = allSlots.get(slotKey) ?? new Set<string>();
   const count = usersInSlot.size;
@@ -512,10 +512,10 @@ function SlotInfoBar({
       <span className="font-semibold text-slate-600">{dayLabel} · {timeLabel}</span>
       <span className="w-px h-3.5 bg-slate-300" />
       {count === 0 ? (
-        <span className="text-slate-400">No one available</span>
+        <span className="text-slate-400">Niemand verfügbar</span>
       ) : (
         <span className="text-slate-600">
-          <span className="font-semibold text-green-600">{count} available: </span>
+          <span className="font-semibold text-green-600">{count} verfügbar: </span>
           {names.map((name, i) => (
             <span key={name}>
               <span className={name === currentUser ? "font-bold text-blue-600" : "text-slate-700"}>
@@ -535,7 +535,7 @@ function SlotInfoBar({
 function BestSlotBanner({ slot, count }: { slot: string; count: number }) {
   const { date, hour } = parseSlotKey(slot);
   const dateObj  = new Date(`${date}T00:00:00`);
-  const dayLabel = dateObj.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+  const dayLabel = dateObj.toLocaleDateString("de-DE", { weekday: "long", month: "short", day: "numeric" });
   const timeLabel = `${String(hour).padStart(2,"0")}:00 – ${String(hour+1).padStart(2,"00")}:00`;
 
   return (
@@ -543,9 +543,9 @@ function BestSlotBanner({ slot, count }: { slot: string; count: number }) {
       <div className="flex items-center gap-3 min-w-0">
         <div className="w-8 h-8 rounded-xl bg-amber-400 flex items-center justify-center shrink-0 text-sm">★</div>
         <div className="min-w-0">
-          <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-0.5">Best available slot</p>
+          <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-0.5">Bester Zeitslot</p>
           <p className="text-sm font-bold text-amber-900 truncate">{dayLabel}</p>
-          <p className="text-xs text-amber-700">{timeLabel} · {count} {count === 1 ? "person" : "people"}</p>
+          <p className="text-xs text-amber-700">{timeLabel} · {count} {count === 1 ? "Person" : "Personen"}</p>
         </div>
       </div>
       <button
