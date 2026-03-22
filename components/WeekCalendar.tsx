@@ -20,7 +20,10 @@ function addDays(date: Date, n: number): Date {
 }
 
 function formatDate(date: Date): string {
-  return date.toISOString().slice(0, 10);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
 function slotKey(date: Date, hour: number): string {
@@ -198,8 +201,11 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
     return best ? { key: best, count: bestCount } : null;
   })();
 
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-  const today    = formatDate(new Date());
+  const weekDays    = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const today       = formatDate(new Date());
+  const currentWeekStart = getWeekStart(new Date());
+  const isPastWeek  = weekStart < currentWeekStart;
+  const isFutureWeek = weekStart > currentWeekStart;
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -225,6 +231,16 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
               {" – "}
               {addDays(weekStart, 6).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
             </span>
+            {isPastWeek && (
+              <div className="text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5 mt-0.5 leading-tight">
+                Past week
+              </div>
+            )}
+            {isFutureWeek && (
+              <div className="text-[10px] font-semibold text-violet-600 bg-violet-50 border border-violet-200 rounded-full px-2 py-0.5 mt-0.5 leading-tight">
+                Upcoming
+              </div>
+            )}
           </div>
           <button
             onClick={() => setWeekStart(w => addDays(w, 7))}
@@ -288,7 +304,7 @@ export default function WeekCalendar({ currentUser }: { currentUser: string }) {
       <div className="flex flex-col lg:flex-row gap-3 items-start">
 
         {/* ── Calendar ─────────────────────────────────────────────────── */}
-        <div className="flex-1 min-w-0 overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
+        <div className={`flex-1 min-w-0 overflow-x-auto rounded-2xl border shadow-sm transition-colors ${isPastWeek ? "border-amber-200 opacity-75" : "border-slate-200"}`}>
           <div className="bg-white min-w-[540px] no-select" style={{ userSelect: "none" }}>
 
             {/* Day headers */}
